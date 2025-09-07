@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kids Auth App</title>
+    <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        .message {
+            margin-top: 20px;
+            text-align: center;
+            color: red;
+        }
+
+        .link {
+            margin-top: 10px;
+            text-align: center;
+            cursor: pointer;
+            color: #007bff;
+        }
+
+        .link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" id="signup-container">
+        <h2>Sign Up</h2>
+        <input type="text" id="signup-username" placeholder="Username">
+        <input type="email" id="signup-email" placeholder="Email">
+        <input type="password" id="signup-password" placeholder="Password">
+        <button onclick="signup()">Sign Up</button>
+        <div class="message" id="signup-message"></div>
+        <div class="link" onclick="showLogin()">Already have an account? Sign In</div>
+    </div>
+
+    <div class="container" id="signin-container" style="display:none;">
+        <h2>Sign In</h2>
+        <input type="email" id="signin-email" placeholder="Email">
+        <input type="password" id="signin-password" placeholder="Password">
+        <button onclick="signin()">Sign In</button>
+        <div class="message" id="signin-message"></div>
+        <div class="link" onclick="showSignup()">Don't have an account? Sign Up</div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3003';
+
+        function showSignup() {
+            document.getElementById('signin-container').style.display = 'none';
+            document.getElementById('signup-container').style.display = 'block';
+        }
+
+        function showLogin() {
+            document.getElementById('signup-container').style.display = 'none';
+            document.getElementById('signin-container').style.display = 'block';
+        }
+
+        async function signup() {
+            const username = document.getElementById('signup-username').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const messageElement = document.getElementById('signup-message');
+
+            try {
+                const response = await fetch(`${API_URL}/signup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    messageElement.style.color = 'green';
+                    messageElement.innerText = data.message;
+                    setTimeout(() => {
+                        showLogin()
+                    }, 1500)
+                } else {
+                    messageElement.style.color = 'red';
+                    messageElement.innerText = data.message;
+                }
+            } catch (error) {
+                messageElement.style.color = 'red';
+                messageElement.innerText = 'Sign up failed';
+            }
+        }
+
+
+
+
+        async function signin() {
+            const email = document.getElementById('signin-email').value;
+            const password = document.getElementById('signin-password').value;
+            const messageElement = document.getElementById('signin-message');
+            try {
+                const response = await fetch(`${API_URL}/signin`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                
+                const data = await response.json();
+                if (data.token) {
+                    messageElement.style.color = 'green';
+                    messageElement.innerText = "Login successful!";
+
+                    const decodedToken = jwt_decode(data.token);
+                    const role = decodedToken.role; // Get role from token
+
+                    if (role === 'superadmin') {
+                        window.location.href = 'admin.html';
+                    } else if (role === 'admin') {
+                        window.location.href = 'products.html';
+                    } else {
+                        window.location.href = 'home.html';
+                    }
+                    // Extract email from decoded token
+                    const userEmail = decodedToken.email;
+
+                    // Store the token in localStorage or sessionStorage
+                    localStorage.setItem('token', data.token);
+                    // Redirect Admin panel if it was admin 
+                    if (role === 'superadmin' || role === 'admin') {
+                        // Redirect to admin panel
+                        window.location.href = 'admin.html';
+                    } else {
+                        // Redirect to user panel (home page)
+                        window.location.href = 'home.html';
+                    }
+                    setTimeout(() => { }, 1000); // Wait a second to ensure the token is stored
+                } else {
+                    console.error('Login failed:', data.message);
+                    messageElement.style.color = 'red';
+                    messageElement.innerText = 'Sign in failed';
+                }
+            } catch (error) {
+                console.error('Error during sign in:', error);
+                messageElement.style.color = 'red';
+                messageElement.innerText = 'An error occurred during sign in';
+            }
+        }
+
+    </script>
+</body>
+
+</html>

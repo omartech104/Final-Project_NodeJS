@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - User Management</title>
+  <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f8ff;
+      margin: 0;
+      padding: 0;
+      position: relative;
+    }
+    .container {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      width: 80%;
+      max-width: 800px;
+      margin: 50px auto;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    table thead {
+      background-color: #3498db;
+      color: white;
+    }
+    table th {
+      padding: 12px 15px;
+      text-align: left;
+    }
+    table td {
+      padding: 10px 15px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    table tr:nth-child(even) {
+      background-color: #f8f9fa;
+    }
+    table tr:hover {
+      background-color: #e3f2fd;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      margin-right: 5px;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .danger {
+      background-color: #dc3545;
+    }
+    .danger:hover {
+      background-color: #c82333;
+    }
+    .logout-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 10px 15px;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .logout-btn:hover {
+      background-color: #bd2130;
+      transform: translateY(-2px);
+    }
+    .role-tag {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .role-user {
+      background-color: #e0e0e0;
+      color: #424242;
+    }
+    .role-admin {
+      background-color: #bbdefb;
+      color: #0d47a1;
+    }
+    .role-superadmin {
+      background-color: #c8e6c9;
+      color: #1b5e20;
+    }
+    .status-bar {
+      background-color: #e3f2fd;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .status-text {
+      font-weight: bold;
+      color: #1565c0;
+    }
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <button class="logout-btn" onclick="logout()">
+    <i class="fas fa-sign-out-alt"></i> Logout
+  </button>
+  
+  <div class="container">
+    <div class="status-bar">
+      <span id="adminStatus">Loading user information...</span>
+      <span id="userCount">0 users</span>
+    </div>
+    
+    <h2>Admin - User Management</h2>
+    
+    <table id="userTable">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- User rows will be injected here by JavaScript -->
+      </tbody>
+    </table>
+    
+    <div class="nav-buttons">
+      <button onclick="window.location.href='products.html'">
+        <i class="fas fa-box"></i> Go to Products
+      </button>
+      <button onclick="loadUsers()">
+        <i class="fas fa-sync"></i> Refresh Users
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3003';
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      window.location.href = 'Sign.html';
+    }
+
+    // Decode token to get current user info
+    let currentUser = null;
+    try {
+      currentUser = jwt_decode(token);
+      document.getElementById('adminStatus').textContent = 
+        `Logged in as: ${currentUser.email} (${currentUser.role})`;
+    } catch (e) {
+      console.error('Error decoding token:', e);
+      alert('Invalid token. Please sign in again.');
+      logout();
+    }
+
+    async function loadUsers() {
+      try {
+        const response = await fetch(`${API_URL}/users`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            logout();
+            return;
+          }
+          throw new Error('Failed to load users');
+        }
+
+        const users = await response.json();
+        const tableBody = document.querySelector('#userTable tbody');
+        tableBody.innerHTML = '';
+        
+        // Update user count
+        document.getElementById('userCount').textContent = `${users.length} users`;
+
+        users.forEach(user => {
+          const row = document.createElement('tr');
+          
+          // Determine role display
+          let roleDisplay = '';
+          if (user.role === 'user') {
+            roleDisplay = `<span class="role-tag role-user">User</span>`;
+          } else if (user.role === 'admin') {
+            roleDisplay = `<span class="role-tag role-admin">Admin</span>`;
+          } else if (user.role === 'superadmin') {
+            roleDisplay = `<span class="role-tag role-superadmin">Super Admin</span>`;
+          }
+          
+          // Action buttons - only show delete for superadmin and not for current user
+          let actions = '';
+          if (currentUser.role === 'superadmin' && user._id !== currentUser.id) {
+            actions = `<button class="danger" onclick="deleteUser('${user._id}')">
+                         <i class="fas fa-trash"></i> Delete
+                       </button>`;
+          } else if (user._id === currentUser.id) {
+            actions = `<span style="color: #777;">Current User</span>`;
+          } else {
+            actions = `<span style="color: #777;">No actions</span>`;
+          }
+          
+          row.innerHTML = `
+            <td>${user.username}</td>
+            <td>${user.email}</td>
+            <td>${roleDisplay}</td>
+            <td>${actions}</td>
+          `;
+          
+          tableBody.appendChild(row);
+        });
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error loading users. Please try again.');
+      }
+    }
+
+    async function deleteUser(userId) {
+      if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+        try {
+          const response = await fetch(`${API_URL}/user/${userId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to delete user');
+          }
+
+          alert('User deleted successfully');
+          loadUsers();
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Failed to delete user. You may not have permission.');
+        }
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = 'Sign.html';
+    }
+
+    // Load users on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadUsers();
+    });
+  </script>
+  
+  <!-- Font Awesome for icons -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+</body>
+</html>
