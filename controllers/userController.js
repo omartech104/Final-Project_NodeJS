@@ -2,9 +2,6 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
-// secret key for jwt
-const SECRET_KEY = "0c5f477d11ad6c89c3cbf9782970dda2";
-
 const getAllUsers = async (req, res) => {
   try {
     const users = await User.find();
