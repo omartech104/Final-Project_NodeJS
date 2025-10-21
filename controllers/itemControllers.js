@@ -22,44 +22,6 @@ const getAllProducts = async (req, res) =>{
     }
 }
 
-const getProductById = async (req, res) => {
-    try {
-        const productId = req.params.productId;
-        const product = await Product.findById(productId)
-
-        if (!product){
-            res.status(404).json({ message: 'Product not found' });
-            return;
-        }
-        res.json(product);
-        return;
-    } catch (error) {
-        console.error("Failed retrieving the productId:", productId);
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
-        return;
-    }
-}
-
-const patchProduct = async (req, res) => {
-    try {
-        const productId = req.params.productId;
-        const product = await Product.findByIdAndUpdate(productId, req.body, { new: true })
-
-        if (!product){
-            res.status(404).json({ message: 'Product not found' });
-            return;
-        }
-        res.json(product);
-        return;
-    } catch (error) {
-        console.error("Failed retrieving the productId:", productId);
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
-        return;
-    }
-}
-
 const deleteProduct=async (req, res) => {
         try {
         const productId = req.params.productId;
@@ -81,8 +43,7 @@ const deleteProduct=async (req, res) => {
 
 module.exports = {
     getAllProducts,
-    getProductById,
     addProduct,
-    patchProduct,
     deleteProduct
 }
+
