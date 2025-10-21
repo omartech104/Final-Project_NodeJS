@@ -2,61 +2,6 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
-const getAllUsers = async (req, res) => {
-  try {
-    const users = await User.find();
-    res.json(users);
-  } catch (error) {
-    res.status(500).send("Error retrieving users");
-  }
-};
-
-const getUserById = async (req, res) => {
-  try {
-    const userId = req.params.userId;
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "user not found" });
-    }
-    res.json(user);
-  } catch (error) {
-    console.error("Failed retrieving the userId:", req.params.userId);
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// const addUser = async (req, res) => {
-//     try {
-//         const newUser = new User({
-//             username: req.body.username,
-//             email: req.body.email,
-//             password: req.body.password
-//         });
-//         await newUser.save();
-//         res.json(newUser);
-//     } catch (error) {
-//         res.status(500).json({ message: 'Error adding user' });
-//     }
-// };
-
-const patchUser = async (req, res) => {
-  try {
-    const userId = req.params.userId;
-    const user = await User.findByIdAndUpdate(userId, req.body, {
-      new: true,
-      runValidators: true,
-    });
-    if (!user) {
-      return res.status(404).json({ message: "user not found" });
-    }
-    res.json(user);
-  } catch (error) {
-    console.error("Failed updating the user:", req.params.userId);
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
 
 const deleteUser = async (req, res) => {
   try {
@@ -179,10 +124,8 @@ const signin = async (req, res) => {
 };
 
 module.exports = {
-  getAllUsers,
-  getUserById,
-  patchUser,
   deleteUser,
   signup,
   signin,
 };
+
